@@ -6,16 +6,14 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
   display: "swap",
-  variable: "--loaded-inter",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "MinuteMind — Capture a moment. Reflect with clarity.",
+  title: "MinuteMind — Private Voice Journal",
   description:
-    "MinuteMind is a calm, private voice journal that helps you capture moments and reflect with clarity.",
-  icons: {
-    icon: "/favicon.ico",
-  },
+    "A calm, private journaling space. Capture a moment, reflect with clarity. Your entries stay on your device — always.",
+  icons: { icon: "/favicon.ico" },
 };
 
 export const viewport: Viewport = {

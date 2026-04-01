@@ -1,0 +1,99 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* ─── Mic Button ─────────────────────────────────────────────────────── */
+.micButton {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast),
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    transform var(--t-fast);
+  overflow: hidden;
+}
+
+.micButton:hover:not(:disabled) {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.micButton:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.micButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Active / recording state */
+.active {
+  background: var(--color-mic-active-bg) !important;
+  border-color: var(--color-mic-active) !important;
+  color: var(--color-mic-active) !important;
+  box-shadow: 0 0 0 3px var(--color-mic-glow);
+  animation: micPulse 2s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--color-mic-glow); }
+  50%       { box-shadow: 0 0 0 7px transparent; }
+}
+
+/* Ripple ring behind the button */
+.ripple {
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-mic-active);
+  opacity: 0;
+  animation: rippleOut 1.8s ease-out infinite;
+}
+
+@keyframes rippleOut {
+  0%   { inset: 0; opacity: 0.6; }
+  100% { inset: -12px; opacity: 0; }
+}
+
+/* ─── Labels ─────────────────────────────────────────────────────────── */
+.listeningLabel {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-mic-active);
+  letter-spacing: 0.04em;
+  animation: blink 1.6s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.errorLabel {
+  font-size: var(--text-xs);
+  color: var(--color-error-text);
+  line-height: var(--leading-snug);
+  max-width: 220px;
+}
+
+.unsupported {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}

@@ -2,124 +2,141 @@
 
 **Capture a moment. Reflect with clarity.**
 
-MinuteMind is a calm, mobile-first voice journal app that lets you write freely, paste a voice transcript, and instantly receive a structured reflection — summary, emotion, themes, and one next step.
+MinuteMind is a calm, premium, privacy-first voice journaling app. Write freely, speak your thoughts, or paste a transcript — then receive a structured reflection: a summary, your emotional tone, recurring themes, and one concrete next step.
 
-This is a polished frontend MVP with mocked reflection output. No backend, no database, no authentication.
+**Your data never leaves your device.** MinuteMind uses IndexedDB to store all entries locally in your browser. Nothing is sent to any server.
 
 ---
 
 ## Features
 
-- **Journal entry form** — write freely or paste a voice transcript
-- **Instant reflection** — mocked AI output with summary, emotion, themes, and a next step
-- **Entry history** — three sample past entries shown as premium cards
-- **Mobile-first design** — optimized for phone screens, looks great on desktop too
-- **Premium aesthetic** — warm off-white palette, elegant typography, refined shadows and spacing
+| Feature | Details |
+|---|---|
+| **Voice input** | Tap the mic button to transcribe speech live into your entry |
+| **Smart reflection** | Summary, emotion, 3 themes, and a next step |
+| **Local storage** | All entries saved to IndexedDB — never uploaded |
+| **Model selection** | Choose between Demo mode, Cloud AI (your API key), or Local (Ollama) |
+| **Settings panel** | Bottom-sheet settings drawer with privacy explanation |
+| **Export** | Download all entries as JSON |
+| **History** | Real entries from IndexedDB, with skeleton loading and empty state |
+| **Premium design** | CSS Modules, warm palette, layered shadows, smooth animations |
+
+---
+
+## Privacy
+
+- No authentication required
+- No backend database
+- No analytics or telemetry
+- API keys (if used) are stored in `localStorage` on your device only
+- Entries are stored in IndexedDB on your device only
 
 ---
 
 ## Tech Stack
 
-- [Next.js 15](https://nextjs.org/) with App Router
-- TypeScript
-- CSS Modules (no Tailwind, no component library)
-- Google Fonts — Inter
+- [Next.js 16](https://nextjs.org/) — App Router, TypeScript
+- CSS Modules — hand-crafted design system, no Tailwind
+- Google Fonts — Inter (via `next/font/google`)
+- Web Speech API — browser-native voice transcription
+- IndexedDB — local-first entry storage
+
+---
+
+## Architecture
+
+```
+app/
+├── components/          UI components (each with co-located .module.css)
+│   ├── Header           Sticky nav with settings gear
+│   ├── Hero             Landing hero with botanical doodle
+│   ├── JournalForm      Textarea + voice + Reflect button + result
+│   ├── ReflectionCard   Animated AI output card
+│   ├── HistorySection   IndexedDB entries list + export
+│   ├── SettingsPanel    Bottom-sheet settings drawer
+│   └── VoiceButton      Web Speech API mic component
+├── lib/
+│   ├── types.ts         Shared TypeScript interfaces
+│   ├── db.ts            IndexedDB helpers (save, load, export)
+│   └── settings.ts      localStorage settings helpers
+├── providers/
+│   ├── index.ts         Routes to the active provider
+│   ├── mockProvider.ts  5 realistic mock reflections
+│   ├── cloudProvider.ts Placeholder for Claude / OpenAI
+│   └── ollamaProvider.ts Placeholder for local Ollama
+├── globals.css          Design tokens + reset
+├── layout.tsx
+└── page.tsx
+```
 
 ---
 
 ## Local Setup
 
-**Prerequisites:** Node.js 18+ and npm.
+**Prerequisites:** Node.js 18+
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/minutemind.git
-cd minutemind/minutemind
-
-# 2. Install dependencies
+# Clone and install
+git clone https://github.com/Ruthwik-Data/Minutemind.git
+cd Minutemind
 npm install
 
-# 3. Start the development server
+# Start dev server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## Project Structure
-
-```
-minutemind/
-├── app/
-│   ├── components/
-│   │   ├── Header.tsx              # Sticky nav with logo
-│   │   ├── Header.module.css
-│   │   ├── Hero.tsx                # Landing hero section
-│   │   ├── Hero.module.css
-│   │   ├── JournalForm.tsx         # Textarea + Reflect button + result
-│   │   ├── JournalForm.module.css
-│   │   ├── ReflectionCard.tsx      # Mocked AI reflection output card
-│   │   ├── ReflectionCard.module.css
-│   │   ├── HistorySection.tsx      # Past entries list
-│   │   └── HistorySection.module.css
-│   ├── globals.css                 # Design tokens + reset + base styles
-│   ├── layout.tsx                  # Root layout with font loading
-│   ├── page.tsx                    # Main page
-│   └── page.module.css
-├── public/
-├── package.json
-└── README.md
-```
+Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## Deploy to Vercel
 
-The easiest way to deploy MinuteMind is with [Vercel](https://vercel.com).
+The repo is ready for zero-config Vercel deployment.
 
-### One-click deploy
+### Via dashboard (recommended)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import `Ruthwik-Data/Minutemind`
+3. Leave all settings as default (Next.js auto-detected)
+4. Click **Deploy** — no environment variables required for demo mode
 
-### Manual deploy
+### Via CLI
 
 ```bash
-# Install the Vercel CLI
 npm install -g vercel
-
-# From inside the minutemind directory
 vercel
-
-# Follow the prompts — no environment variables required
 ```
 
-Or connect your GitHub repository in the [Vercel dashboard](https://vercel.com/dashboard):
+---
 
-1. Import the repository
-2. Set the **Root Directory** to `minutemind` (if deploying from the monorepo root)
-3. Leave all other settings as default — Next.js is auto-detected
-4. Click **Deploy**
+## Adding Real AI
+
+To connect a real AI provider, edit the corresponding file in `app/providers/`:
+
+- **Cloud (OpenAI / Claude / etc.):** `app/providers/cloudProvider.ts` — replace the stub with a real `fetch` call using the `apiKey` argument
+- **Local (Ollama):** `app/providers/ollamaProvider.ts` — replace the stub with a fetch to the Ollama REST API
+
+All providers must return:
+
+```ts
+{
+  summary: string;
+  emotion: string;
+  themes: string[];
+  nextStep: string;
+}
+```
 
 ---
 
 ## Scripts
 
-| Command         | Description                     |
-|-----------------|---------------------------------|
-| `npm run dev`   | Start local development server  |
-| `npm run build` | Build for production            |
-| `npm run start` | Start production server locally |
-| `npm run lint`  | Run ESLint                      |
-
----
-
-## Design Decisions
-
-- **No Tailwind** — all styles are written in CSS Modules with a centralized design token system in `globals.css`
-- **No component library** — every UI element is hand-crafted for full control over aesthetics
-- **Mocked AI** — reflection output cycles through three realistic responses, no API key required
-- **No auth or database** — this is a pure frontend MVP, ready to layer backend features onto
+| Command | Description |
+|---|---|
+| `npm run dev` | Start local dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
 
 ---
 

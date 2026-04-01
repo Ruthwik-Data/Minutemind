@@ -1,50 +1,27 @@
 "use client";
 
 import { useState, useRef } from "react";
+import VoiceButton from "./VoiceButton";
+import ReflectionCard from "./ReflectionCard";
+import { runReflection } from "../providers";
+import { saveEntry } from "../lib/db";
+import type { AppSettings, JournalEntry, ReflectionResult } from "../lib/types";
 import styles from "./JournalForm.module.css";
-import ReflectionCard, { ReflectionResult } from "./ReflectionCard";
-
-const MOCK_REFLECTIONS: ReflectionResult[] = [
-  {
-    summary:
-      "You're navigating a period of meaningful transition. Your thoughts reveal both excitement about new possibilities and a natural anxiety about letting go of the familiar. This tension is healthy and signals that you're taking the change seriously.",
-    emotion: "Hopeful",
-    themes: ["Change & transition", "Self-trust", "Uncertainty"],
-    nextStep:
-      "Write down one small action you can take this week to move toward the thing that excites you most.",
-  },
-  {
-    summary:
-      "There's a recurring thread of feeling stretched across too many commitments. You're aware of this but find it hard to draw boundaries. The clarity you're seeking may come from identifying what you'd protect first if you had to choose.",
-    emotion: "Overwhelmed",
-    themes: ["Boundaries", "Priorities", "Energy"],
-    nextStep:
-      "List your top three commitments and notice which one energizes you versus which one drains you.",
-  },
-  {
-    summary:
-      "Today's reflection carries a quiet sense of gratitude underneath some surface-level frustration. You seem to have more perspective than you give yourself credit for, and the frustration may be pointing toward something worth addressing directly.",
-    emotion: "Reflective",
-    themes: ["Gratitude", "Frustration", "Growth"],
-    nextStep:
-      "Reach out to one person you mentioned feeling grateful for — even a short note can shift your energy.",
-  },
-];
-
-function getMockReflection(): ReflectionResult {
-  return MOCK_REFLECTIONS[Math.floor(Math.random() * MOCK_REFLECTIONS.length)];
-}
 
 interface JournalFormProps {
   formRef: React.RefObject<HTMLElement | null>;
+  settings: AppSettings;
+  onEntrySaved: () => void;
 }
 
-export default function JournalForm({ formRef }: JournalFormProps) {
+export default function JournalForm({ formRef, settings, onEntrySaved }: JournalFormProps) {
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ReflectionResult | null>(null);
   const [error, setError] = useState("");
   const resultRef = useRef<HTMLDivElement>(null);
+
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   async function handleReflect() {
     if (!text.trim()) {
@@ -55,36 +32,58 @@ export default function JournalForm({ formRef }: JournalFormProps) {
     setResult(null);
     setIsLoading(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 1800));
+    try {
+      const reflection = await runReflection(text, settings);
+      setResult(reflection);
 
-    setIsLoading(false);
-    const reflection = getMockReflection();
-    setResult(reflection);
+      const entry: JournalEntry = {
+        id: crypto.randomUUID(),
+        text,
+        createdAt: new Date().toISOString(),
+        reflection,
+      };
+      await saveEntry(entry);
+      onEntrySaved();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
 
     setTimeout(() => {
       resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+    }, 80);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      handleReflect();
-    }
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") handleReflect();
   }
 
-  const charCount = text.length;
-  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  function handleVoiceTranscript(t: string) {
+    setText(t);
+    if (error) setError("");
+  }
+
+  const modeLabelMap: Record<string, string> = {
+    mock: "Demo mode",
+    cloud: "Cloud AI",
+    local: "Local model",
+  };
 
   return (
     <section className={styles.section} ref={formRef as React.RefObject<HTMLElement>}>
       <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>New Entry</h2>
-        <p className={styles.sectionSubtitle}>
-          Write freely or paste a voice transcript below.
-        </p>
+        <h2 className={styles.sectionTitle}>New entry</h2>
+        <div className={styles.modeTag}>
+          <span className={styles.modeDot} />
+          {modeLabelMap[settings.modelMode]}
+        </div>
       </div>
 
-      <div className={styles.formCard}>
+      {/* Form card */}
+      <div className={`${styles.formCard} ${isLoading ? styles.formCardLoading : ""}`}>
+
+        {/* Textarea area */}
         <div className={styles.textareaWrapper}>
           <textarea
             className={styles.textarea}
@@ -94,27 +93,39 @@ export default function JournalForm({ formRef }: JournalFormProps) {
               if (error) setError("");
             }}
             onKeyDown={handleKeyDown}
-            placeholder="What's on your mind? You can write a journal entry, paste a voice transcript, or just start with how you're feeling right now..."
-            rows={8}
+            placeholder="What&#39;s on your mind? Write a thought, paste a transcript, or speak freely below…"
+            rows={9}
             aria-label="Journal entry"
+            disabled={isLoading}
           />
-          {text.length > 0 && (
-            <div className={styles.textStats}>
-              {wordCount} {wordCount === 1 ? "word" : "words"}
-              <span className={styles.statsDivider}>·</span>
-              {charCount} chars
-            </div>
-          )}
         </div>
 
+        {/* Error */}
         {error && (
           <div className={styles.errorMessage} role="alert">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M6.5 3.5v3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              <circle cx="6.5" cy="9.5" r="0.75" fill="currentColor" />
+            </svg>
             {error}
           </div>
         )}
 
-        <div className={styles.formFooter}>
-          <span className={styles.shortcut}>⌘ + Return to reflect</span>
+        {/* Footer toolbar */}
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarLeft}>
+            <VoiceButton
+              onTranscript={handleVoiceTranscript}
+              disabled={isLoading}
+            />
+            {wordCount > 0 && (
+              <span className={styles.wordCount}>
+                {wordCount} {wordCount === 1 ? "word" : "words"}
+              </span>
+            )}
+          </div>
+
           <button
             className={styles.reflectButton}
             onClick={handleReflect}
@@ -123,27 +134,32 @@ export default function JournalForm({ formRef }: JournalFormProps) {
           >
             {isLoading ? (
               <span className={styles.loadingContent}>
-                <span className={styles.spinner} aria-hidden="true" />
+                <span className={styles.buttonSpinner} aria-hidden="true" />
                 Reflecting…
               </span>
             ) : (
-              "Reflect"
+              <>
+                Reflect
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                  <path d="M2.5 6.5h8M8 3.5l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </>
             )}
           </button>
         </div>
       </div>
 
+      {/* Loading state */}
       {isLoading && (
-        <div className={styles.loadingState}>
-          <div className={styles.loadingDots}>
-            <span />
-            <span />
-            <span />
+        <div className={styles.thinkingState}>
+          <div className={styles.thinkingDots}>
+            <span /><span /><span />
           </div>
-          <p className={styles.loadingText}>Reading your entry…</p>
+          <p className={styles.thinkingText}>Finding patterns in your entry…</p>
         </div>
       )}
 
+      {/* Result */}
       {result && !isLoading && (
         <div ref={resultRef} className={styles.resultWrapper}>
           <ReflectionCard result={result} />
